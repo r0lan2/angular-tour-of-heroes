@@ -1,8 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
-
+import { Location } from '@angular/common';
 import { Hero } from './hero';
 import { HeroService } from './hero.service';
+import { SharedService } from './sharedService';
 
 @Component({
   selector: 'my-hero-detail',
@@ -16,36 +17,27 @@ export class HeroDetailComponent implements OnInit {
   navigated = false; // true if navigated here
 
   constructor(
-    private heroService: HeroService,
-    private route: ActivatedRoute) {
+    private heroService: HeroService, private location: Location,
+    private route: ActivatedRoute, private sharedService: SharedService) {
   }
 
   ngOnInit(): void {
-    this.route.params.forEach((params: Params) => {
-      if (params['id'] !== undefined) {
-        const id = +params['id'];
-        this.navigated = true;
-        this.heroService.getHero(id)
-            .then(hero => this.hero = hero);
-      } else {
-        this.navigated = false;
-        this.hero = new Hero();
-      }
-    });
+   if (this.sharedService.currentItem != null) {
+    this.hero = this.sharedService.currentItem;
+   }
+    // tslint:disable-next-line:one-line
+    else {this.hero = {id: -1, name: ''}; }
   }
 
   save(): void {
-    this.heroService
-        .save(this.hero)
-        .then(hero => {
-          this.hero = hero; // saved hero, w/ id if new
-          this.goBack(hero);
-        })
-        .catch(error => this.error = error); // TODO: Display error message
+    this.sharedService.storeEvent.emit(this.hero);
+  }
+
+  delete(): void {
+    this.sharedService.deleteEvent.emit(this.hero);
   }
 
   goBack(savedHero: Hero = null): void {
-    this.close.emit(savedHero);
-    if (this.navigated) { window.history.back(); }
+   this.location.back();
   }
 }
